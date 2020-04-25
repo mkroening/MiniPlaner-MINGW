@@ -1,0 +1,43 @@
+# Maintainer: Martin Kröning <m.kroening@hotmail.de>
+_realname=MiniPlaner
+_pkgname=miniplaner
+pkgbase=mingw-w64-$_pkgname-git-static
+pkgname=$MINGW_PACKAGE_PREFIX-$_pkgname-git-static
+pkgver=2.0.4
+pkgrel=1
+pkgdesc='A small program to efficiently create high-quality service plans'
+arch=(any)
+url="https://yannikschaelte.github.io/$_realname/"
+license=(LGPL3)
+makedepends=($MINGW_PACKAGE_PREFIX-wxWidgets
+             $MINGW_PACKAGE_PREFIX-gcc
+             $MINGW_PACKAGE_PREFIX-meson
+             git)
+provides=(${pkgname%-git-static})
+conflicts=(${pkgname%-git-static})
+source=("git+https://github.com/yannikschaelte/$_realname.git"
+        "nativefile.ini")
+sha256sums=('SKIP'
+            '7e88d8c2352967e1f3c3e7bf6d15440f3d93f48d04d259f4fd3eb26c5f5c8491')
+
+pkgver() {
+    cd $_realname
+
+    printf "%s" "$(git describe --long --tags | sed 's/\([^-]*-\)g/r\1/;s/-/./g;s/v//')"
+}
+
+build() {
+    LDFLAGS+=" -static"
+    # TODO: Enable LTO once working
+    meson $_realname build-$CARCH \
+        --prefix        $MINGW_PREFIX \
+        --buildtype     plain \
+        --auto-features enabled \
+        --native-file   nativefile.ini \
+        -D              b_pie=true
+    ninja -C build-$CARCH
+}
+
+package() {
+    DESTDIR="${pkgdir}${MINGW_PREFIX}" meson install -C build-$CARCH
+}
